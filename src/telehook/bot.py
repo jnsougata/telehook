@@ -18,7 +18,7 @@ fastapi_app.telegram_token = None
 
 
 @fastapi_app.post('/')
-async def listener(request: fastapi.Request):
+async def handler(request: fastapi.Request):
     try:
         signature = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
         if signature == fastapi_app.bot_signature:
