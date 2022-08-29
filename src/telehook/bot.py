@@ -2,7 +2,6 @@ import inspect
 import logging
 import fastapi
 import asyncio
-import telegram
 import requests
 import traceback
 from typing import Union
