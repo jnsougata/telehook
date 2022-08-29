@@ -33,19 +33,27 @@ async def handler(request: fastapi.Request):
                         args = parsed[1:][:len(spec.args)-1]
                         args.insert(0, ctx)  # type: ignore
                         parsed_kwargs = parsed[len(spec.args):]
-                        if spec.kwonlyargs and parsed_kwargs:
-                            kwargs = {spec.kwonlyargs[0]: " ".join(parsed_kwargs)}
-                        else:
+                        if spec.kwonlyargs and not parsed_kwargs:
                             return JSONResponse(
                                 {"command": parsed[0], "status": "failed", "reason": "InsufficientKwargs"},
                                 status_code=203)
-                        if len(args) == len(spec.args):
-                            await command(*args, **kwargs)
-                            return JSONResponse({"command": parsed[0], " status": "success"}, status_code=200)
+                        elif spec.kwonlyargs:
+                            kwargs = {spec.kwonlyargs[0]: " ".join(parsed_kwargs)}
+                            if len(args) == len(spec.args):
+                                await command(*args, **kwargs)
+                                return JSONResponse({"command": parsed[0], " status": "success"}, status_code=200)
+                            else:
+                                return JSONResponse(
+                                    {"command": parsed[0], "status": "failed", "reason": "InsufficientArgs"},
+                                    status_code=203)
                         else:
-                            return JSONResponse(
-                                {"command": parsed[0], "status": "failed", "reason": "InsufficientArgs"},
-                                status_code=203)
+                            if len(args) == len(spec.args):
+                                await command(*args)
+                                return JSONResponse({"command": parsed[0], " status": "success"}, status_code=200)
+                            else:
+                                return JSONResponse(
+                                    {"command": parsed[0], "status": "failed", "reason": "InsufficientArgs"},
+                                    status_code=203)
                     else:
                         return JSONResponse(
                             {"command": parsed[0], "status": "ignored", "reason": "NotImplemented"}, status_code=205)
