@@ -32,17 +32,19 @@ async def listener(request: fastapi.Request):
                         spec = inspect.getfullargspec(command)
                         args = parsed[1:][:len(spec.args)-1]
                         args.insert(0, ctx)  # type: ignore
-                        if spec.kwonlyargs:
-                            parsed_kwargs = parsed[len(spec.args):]
+                        parsed_kwargs = parsed[len(spec.args):]
+                        if spec.kwonlyargs and parsed_kwargs:
                             kwargs = {spec.kwonlyargs[0]: " ".join(parsed_kwargs)}
                         else:
-                            kwargs = {}
+                            return JSONResponse(
+                                {"command": parsed[0], "status": "failed", "reason": "InsufficientKwargs"},
+                                status_code=203)
                         if len(args) == len(spec.args):
                             await command(*args, **kwargs)
                             return JSONResponse({"command": parsed[0], " status": "success"}, status_code=200)
                         else:
                             return JSONResponse(
-                                {"command": parsed[0], "status": "failed", "reason": "InsufficientArguments"},
+                                {"command": parsed[0], "status": "failed", "reason": "InsufficientArgs"},
                                 status_code=203)
                     else:
                         return JSONResponse(
