@@ -7,6 +7,7 @@ import traceback
 from typing import Union
 from fastapi import FastAPI
 from functools import wraps
+from .context import Context
 from fastapi.responses import JSONResponse
 
 fastapi_app = FastAPI()
@@ -21,7 +22,7 @@ async def listener(request: fastapi.Request):
     try:
         signature = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
         if signature == fastapi_app.bot_signature:
-            ctx = telegram.Context(await request.json(), token=fastapi_app.telegram_token)
+            ctx = Context(await request.json(), token=fastapi_app.telegram_token)
             if ctx.message and ctx.message.text:
                 if ctx.message.text.startswith(fastapi_app.bot_prefix):
 
