@@ -46,6 +46,12 @@ class Bot:
             return wrapper()
         return decorator
 
+    @staticmethod
+    def on_update(coro: Callable):
+        if not asyncio.iscoroutinefunction(coro):
+            raise ValueError(f"update listener `{coro.__name__} must be a coroutine function`")
+        app.listeners[coro.__name__] = coro
+
     def gateway(self, webhook_url: Optional[str] = None) -> FastAPI:
         if self._auto_set_webhook:
             if not webhook_url:

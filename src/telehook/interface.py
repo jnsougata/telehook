@@ -1,12 +1,14 @@
+import asyncio
 import fastapi
 import traceback
 from fastapi import FastAPI
-from .context import Context
+from .context import Context, dispatches
 from fastapi.responses import JSONResponse
 
 
 app = FastAPI()
 app.commands = {}
+app.listeners = {}
 app.bot_prefix = None
 app.bot_signature = None
 app.telegram_token = None
@@ -18,6 +20,10 @@ async def handler(request: fastapi.Request):
         signature = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
         if signature == app.bot_signature:
             ctx = Context(await request.json(), token=app.telegram_token)
+            if ctx.type is not dispatches.unknown:
+                listener = app.listeners.get(ctx.type.value, None)
+                if listener:
+                    asyncio.create_task(listener(ctx.message))
             if ctx.message and ctx.message.text:
                 if ctx.message.text.startswith(app.bot_prefix):
                     parsed = ctx.message.text.split(" ")

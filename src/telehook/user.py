@@ -10,4 +10,7 @@ class User:
         self.username: str = payload.get('username')
         self.language: str = payload.get('language_code')
         self.premium: bool = payload.get('is_premium', False)
-        self.use_attachment_menu: bool = payload.get('added_to_attachment_menu', False)
+        self.enabled_attachment_menu: bool = payload.get('added_to_attachment_menu', False)
+        self.can_join_groups: bool = payload.get('can_join_groups', None)
+        self.access_group_messages: bool = payload.get('can_read_all_group_messages', None)
+        self.supports_inline_queries: bool = payload.get('supports_inline_queries', False)
