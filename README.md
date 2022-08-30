@@ -1,2 +1,2 @@
 # telehook
-telegram api wrapper for webhook bots
+telegram api wrapper for serverless apps
