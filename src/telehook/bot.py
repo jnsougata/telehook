@@ -4,7 +4,7 @@ import asyncio
 from .interface import app
 from fastapi import FastAPI
 from functools import wraps
-from typing import Optional
+from typing import Optional, Callable
 
 
 class Bot:
@@ -25,7 +25,7 @@ class Bot:
         app.telegram_token = token
 
     def command(self, name: Optional[str] = None):
-        def decorator(func):
+        def decorator(func: Callable):
             @wraps(func)
             def wrapper(*args, **kwargs):
                 if not asyncio.iscoroutinefunction(func):
@@ -42,7 +42,7 @@ class Bot:
                 if spec.varargs:
                     raise ValueError(f"command <{func.__name__}> should only have positional arguments")
                 app.commands[f"{self.prefix}{name or func.__name__}"] = func
-                return self
+                return func
             return wrapper()
         return decorator
 
