@@ -1,5 +1,6 @@
 import asyncio
 import fastapi
+import inspect
 import traceback
 from fastapi import FastAPI
 from .context import Context, dispatches
