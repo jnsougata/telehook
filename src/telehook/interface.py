@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 
 
 app = FastAPI()
+app.user = None
 app.commands = {}
 app.listeners = {}
 app.bot_prefix = None
@@ -26,8 +27,9 @@ async def handler(request: fastapi.Request):
                 if listener:
                     asyncio.create_task(listener(ctx.message))
             if ctx.message and ctx.message.text:
-                if ctx.message.text.startswith(app.bot_prefix):
-                    parsed = ctx.message.text.split(" ")
+                if ctx.message.text.startswith(app.bot_prefix) or ctx.message.text.startswith(f"@{app.user.username} "):
+                    qualified_text = ctx.message.text.replace(f"@{app.user.username} ", "/")
+                    parsed = qualified_text.split(" ")
                     command = app.commands.get(parsed[0], None)
                     if command:
                         spec = inspect.getfullargspec(command)

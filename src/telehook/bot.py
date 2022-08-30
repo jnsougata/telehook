@@ -1,25 +1,21 @@
+import re
 import inspect
 import requests
 import asyncio
+from .user import User
 from .interface import app
 from fastapi import FastAPI
 from functools import wraps
-from typing import Optional, Callable
+from typing import Optional, Callable, Any, Tuple
 
 
 class Bot:
 
-    def __init__(
-            self, token: str,
-            *,
-            prefix: Optional[str] = "/",
-            set_webhook: bool = False
-    ):
+    def __init__(self, token: str, *, prefix: Optional[str] = "/"):
         self.prefix = prefix
         app.bot_prefix = prefix
-        self._auto_set_webhook = set_webhook
-        if not token:
-            raise ValueError("token value can not be empty")
+        if not re.fullmatch("[0-9]+:.*", token):
+            raise ValueError("invalid bot token.token should match following regex ([0-9]+:.*)")
         app.bot_signature = token.split(":")[-1]
         self.token = token
         app.telegram_token = token
@@ -52,16 +48,26 @@ class Bot:
             raise ValueError(f"update listener `{coro.__name__} must be a coroutine function`")
         app.listeners[coro.__name__] = coro
 
-    def gateway(self, webhook_url: Optional[str] = None) -> FastAPI:
-        if self._auto_set_webhook:
-            if not webhook_url:
-                raise RuntimeError("`webhook_url` can not be empty when `set_webhook` is True")
-            path = "https://api.telegram.org/bot" + self.token + "/setWebhook"
+    def router(
+            self,
+            webhook_host: Optional[str] = None,
+            *,
+            on_startup: Optional[Callable] = None,
+            parameters: Optional[Tuple] = None,
+            **kwargs
+    ) -> FastAPI:
+        try:
+            path = f"https://api.telegram.org/bot{self.token}"
             json_params = {
-                "url": webhook_url,
+                "url": webhook_host,
                 "max_connections": 100,
                 "drop_pending_updates": True,
                 "secret_token": app.bot_signature,
             }
-            requests.get(path, json=json_params)
-        return app
+            requests.get(path + "/setWebhook", json=json_params)
+            data = requests.get(path + "/getMe").json()
+            app.user = User(data.get("result") or {})
+            print(app.user.username)
+            on_startup(*parameters, **kwargs)
+        finally:
+            return app
