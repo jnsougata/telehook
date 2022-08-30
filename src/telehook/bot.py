@@ -10,24 +10,23 @@ from functools import wraps
 from .context import Context
 from fastapi.responses import JSONResponse
 
-fastapi_app = FastAPI()
-fastapi_app.commands = {}
-fastapi_app.bot_prefix = None
-fastapi_app.bot_signature = None
-fastapi_app.telegram_token = None
+app = FastAPI()
+app.commands = {}
+app.bot_prefix = None
+app.bot_signature = None
+app.telegram_token = None
 
 
-@fastapi_app.post('/')
+@app.post('/')
 async def handler(request: fastapi.Request):
     try:
         signature = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
-        if signature == fastapi_app.bot_signature:
-            ctx = Context(await request.json(), token=fastapi_app.telegram_token)
+        if signature == app.bot_signature:
+            ctx = Context(await request.json(), token=app.telegram_token)
             if ctx.message and ctx.message.text:
-                if ctx.message.text.startswith(fastapi_app.bot_prefix):
-
+                if ctx.message.text.startswith(app.bot_prefix):
                     parsed = ctx.message.text.split(" ")
-                    command = fastapi_app.commands.get(parsed[0], None)
+                    command = app.commands.get(parsed[0], None)
                     if command:
                         spec = inspect.getfullargspec(command)
                         args = parsed[1:][:len(spec.args)-1]
@@ -70,12 +69,12 @@ class Bot:
 
     def __init__(self, token: str, *, prefix: str = "/"):
         self.prefix = prefix
-        fastapi_app.bot_prefix = prefix
+        app.bot_prefix = prefix
         if not token:
             raise ValueError("token value must be given")
-        fastapi_app.bot_signature = token.split(":")[-1]
+        app.bot_signature = token.split(":")[-1]
         self.token = token
-        fastapi_app.telegram_token = token
+        app.telegram_token = token
 
     def command(self, name: str = None):
         def decorator(func):
@@ -92,18 +91,20 @@ class Bot:
                     raise ValueError(f"command <{func.__name__}> args can not have default values")
                 if spec.varargs:
                     raise ValueError(f"command <{func.__name__}> should only have positional arguments")
-                fastapi_app.commands[f"{self.prefix}{name or func.__name__}"] = func
+                app.commands[f"{self.prefix}{name or func.__name__}"] = func
                 return self
             return wrapper()
         return decorator
 
-    def asgi_app(self, webhook_url: str, ):
+    def gateway(self, webhook_url: str):
+        if not webhook_url:
+            raise ValueError("webhook_url can not be empty")
         path = "https://api.telegram.org/bot" + self.token + "/setWebhook"
         json_params = {
             "url": webhook_url,
-            "secret_token": fastapi_app.bot_signature,
+            "max_connections": 100,
             "drop_pending_updates": True,
-            "max_connections": 100
+            "secret_token": app.bot_signature,
         }
-        requests.get(path, json_params)
-        return fastapi_app
+        requests.get(path, json=json_params)
+        return app
