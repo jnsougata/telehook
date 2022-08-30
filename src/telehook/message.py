@@ -9,7 +9,7 @@ class Message:
         self.id = payload['message_id']
         self.date = payload['date']
         self.chat = Chat(self._payload['chat'])
-        self.text: Optional[str] = self._payload.get['text']
+        self.text: Optional[str] = self._payload['text']
         self.caption: Optional[str] = self._payload.get('caption')
 
     @property
