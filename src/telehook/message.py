@@ -118,8 +118,9 @@ class Message:
             return Voice(**voice)
 
     @property
-    def caption_entities(self) -> Optional[List[Any]]:
-        # TODO: create type
-        return self._payload.get('caption_entities')
+    def caption_entities(self) -> Optional[List[MessageEntity]]:
+        payload = self._payload.get('caption_entities')
+        if payload:
+            return [MessageEntity(entity) for entity in payload]
 
     # TODO: more
