@@ -18,6 +18,8 @@ app.telegram_token = None
 
 @app.post('/')
 async def handler(request: fastapi.Request):
+    def check_prefix(text: str) -> bool:
+        return text.startswith(app.bot_prefix) or text.startswith(f"@{app.user.username} ")
     try:
         signature = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
         if signature == app.bot_signature:
@@ -27,7 +29,7 @@ async def handler(request: fastapi.Request):
                 if listener:
                     asyncio.create_task(listener(ctx.message))
             if ctx.message and ctx.message.text:
-                if ctx.message.text.startswith(app.bot_prefix) or ctx.message.text.startswith(f"@{app.user.username} "):
+                if check_prefix(ctx.message.text):
                     qualified_text = ctx.message.text.replace(f"@{app.user.username} ", "/")
                     parsed = qualified_text.split(" ")
                     command = app.commands.get(parsed[0], None)
@@ -66,4 +68,4 @@ async def handler(request: fastapi.Request):
             return JSONResponse({"status": "denied", "reason": "Unauthorized"}, status_code=401)
     except Exception as e:
         stack = traceback.format_exception(type(e), e, e.__traceback__)
-        return fastapi.responses.PlainTextResponse("".join(stack), status_code=500)
+        return JSONResponse({"status": "errored", "reason": " ".join(stack)}, status_code=500)

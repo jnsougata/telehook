@@ -66,7 +66,7 @@ class Bot:
             }
             requests.get(path + "/setWebhook", json=json_params)
             data = requests.get(path + "/getMe").json()
-            app.user = User(data.get("result") or {})
+            app.user = User(**data["result"])
             print(app.user.username)
             on_startup(*parameters, **kwargs)
         finally:

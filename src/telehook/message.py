@@ -1,6 +1,13 @@
 from typing import Union, Optional, List, Any
 from .user import User
 from .chat import Chat
+from .animation import Animation
+from .audio import Audio
+from .document import Document
+from .photosize import PhotoSize
+from .video import Video
+from .videonote import VideoNote
+from .voice import Voice
 
 
 class Message:
@@ -62,24 +69,28 @@ class Message:
         return self._payload.get('entities')
 
     @property
-    def animation(self) -> Optional[Any]:
-        # TODO: create new type
-        return self._payload.get('animation')
+    def animation(self) -> Optional[Animation]:
+        anim = self._payload.get('animation')
+        if anim:
+            return Animation(anim)
 
     @property
-    def audio(self) -> Optional[Any]:
-        # TODO: create new type
-        return self._payload.get('audio')
+    def audio(self) -> Optional[Audio]:
+        audio = self._payload.get('audio')
+        if audio:
+            return Audio(audio)
 
     @property
-    def document(self) -> Optional[Any]:
-        # TODO: create new type
-        return self._payload.get('document')
+    def document(self) -> Optional[Document]:
+        doc = self._payload.get('document')
+        if doc:
+            return Document(doc)
 
     @property
-    def photo(self) -> Optional[List[Any]]:
-        # TODO: create new type
-        return self._payload.get('photo')
+    def photo(self) -> Optional[List[PhotoSize]]:
+        photos = self._payload.get('photo')
+        if photos:
+            return [PhotoSize(**p) for p in photos]
 
     @property
     def sticker(self) -> Optional[Any]:
@@ -87,18 +98,22 @@ class Message:
         return self._payload.get('sticker')
 
     @property
-    def video(self) -> Optional[Any]:
-        # TODO: create new type
-        return self._payload.get('video')
+    def video(self) -> Optional[Video]:
+        vid = self._payload.get('video')
+        if vid:
+            return Video(vid)
 
     @property
-    def video_note(self) -> Optional[Any]:
-        return self._payload.get('video_note')
+    def video_note(self) -> Optional[VideoNote]:
+        vid = self._payload.get('video_note')
+        if vid:
+            return VideoNote(vid)
 
     @property
-    def voice(self) -> Optional[Any]:
-        # TODO: create new type
-        return self._payload.get('voice')
+    def voice(self) -> Optional[Voice]:
+        voice = self._payload.get('voice')
+        if voice:
+            return Voice(**voice)
 
     @property
     def caption_entities(self) -> Optional[List[Any]]:
