@@ -1,6 +1,5 @@
 from typing import Optional
 from .photosize import PhotoSize
-from dataclasses import dataclass
 
 
 class Audio:

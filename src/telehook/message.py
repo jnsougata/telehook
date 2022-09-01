@@ -8,6 +8,7 @@ from .photosize import PhotoSize
 from .video import Video
 from .videonote import VideoNote
 from .voice import Voice
+from .entity import MessageEntity
 
 
 class Message:
@@ -33,7 +34,7 @@ class Message:
     def forwarded_by(self) -> Optional[User]:
         payload = self._payload.get('forward_from', None)
         if payload:
-            return User(payload)
+            return User(**payload)
 
     @property
     def forwarded_from(self) -> Optional[Chat]:
@@ -45,7 +46,7 @@ class Message:
     def author(self) -> Optional[User]:
         payload = self._payload.get('from')
         if payload:
-            return User(payload)
+            return User(**payload)
 
     @property
     def edited_date(self) -> Optional[int]:
@@ -64,9 +65,10 @@ class Message:
         return self._payload.get('author_signature')
 
     @property
-    def entities(self) -> Optional[List[Any]]:
-        # TODO: create new type
-        return self._payload.get('entities')
+    def entities(self) -> Optional[List[MessageEntity]]:
+        payload = self._payload.get('entities')
+        if payload:
+            return [MessageEntity(entity) for entity in payload]
 
     @property
     def animation(self) -> Optional[Animation]:
