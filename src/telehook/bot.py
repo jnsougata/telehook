@@ -1,30 +1,41 @@
 import re
+import hashlib
 import inspect
 import requests
-import asyncio
 from .user import User
 from .interface import app
 from fastapi import FastAPI
 from functools import wraps
+from .interface import handler
 from typing import Optional, Callable, Any, Tuple
 
 
-class Bot:
+def _match_token(token: str) -> bool:
+    return re.fullmatch("[0-9]+:.*", token)
+
+def _create_signature(token: str) -> str:
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+class Bot(FastAPI):
 
     def __init__(self, token: str, *, prefix: Optional[str] = "/"):
+        super().__init__()
         self.prefix = prefix
-        app.bot_prefix = prefix
-        if not re.fullmatch("[0-9]+:.*", token):
-            raise ValueError("invalid bot token.token should match following regex ([0-9]+:.*)")
-        app.bot_signature = token.split(":")[-1]
+        self.commands = {}
+        self.listeners = {}
+        self.user: User = None
+        assert _match_token(token), "invalid token"
         self.token = token
-        app.telegram_token = token
+        self.signature = _create_signature(token.split(":")[-1])
+        self.add_route("/", handler, methods=["POST"])
 
     def command(self, name: Optional[str] = None):
+
         def decorator(func: Callable):
             @wraps(func)
             def wrapper(*args, **kwargs):
-                if not asyncio.iscoroutinefunction(func):
+                if not inspect.iscoroutinefunction(func):
                     raise ValueError(f"command <{func.__name__}> must be a coroutine")
                 spec = inspect.getfullargspec(func)
                 if not spec.args:
@@ -37,18 +48,17 @@ class Bot:
                     raise ValueError(f"command <{func.__name__}> args can not have default values")
                 if spec.varargs:
                     raise ValueError(f"command <{func.__name__}> should only have positional arguments")
-                app.commands[f"{self.prefix}{name or func.__name__}"] = func
+                self.commands[f"{self.prefix}{name or func.__name__}"] = func
                 return func
             return wrapper()
         return decorator
 
-    @staticmethod
-    def on_update(coro: Callable):
-        if not asyncio.iscoroutinefunction(coro):
+    def on_update(self, coro: Callable):
+        if not inspect.iscoroutinefunction(coro):
             raise ValueError(f"update listener `{coro.__name__} must be a coroutine function`")
-        app.listeners[coro.__name__] = coro
+        self.listeners[coro.__name__] = coro
 
-    def router(
+    def export(
             self,
             webhook_host: Optional[str] = None,
             *,
@@ -62,12 +72,12 @@ class Bot:
                 "url": webhook_host,
                 "max_connections": 100,
                 "drop_pending_updates": True,
-                "secret_token": app.bot_signature,
+                "secret_token": self.signature,
             }
             requests.get(path + "/setWebhook", json=json_params)
             data = requests.get(path + "/getMe").json()
-            app.user = User(**data["result"])
-            print(app.user.username)
+            self.user = User(**data["result"])
+            print(self.user.username)
             on_startup(*parameters, **kwargs)
         finally:
             return app
