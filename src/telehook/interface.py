@@ -25,7 +25,7 @@ async def handler(request: Request):
                 asyncio.create_task(listener(ctx.message))
 
         if not (ctx.message and ctx.message.text):
-            return JSONResponse({"status": "denied", "reason": "Unauthorized"}, status_code=401)
+            return JSONResponse({"status": "denied", "reason": "NotTextCommand"}, status_code=401)
 
         if not check_prefix(ctx.message.text):
             return JSONResponse({"status": "ignored", "reason": "NonCommand"}, status_code=200)

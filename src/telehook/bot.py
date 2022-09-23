@@ -3,7 +3,6 @@ import hashlib
 import inspect
 import requests
 from .user import User
-from .interface import app
 from fastapi import FastAPI
 from functools import wraps
 from .interface import handler
@@ -60,7 +59,7 @@ class Bot(FastAPI):
 
     def export(
             self,
-            webhook_host: Optional[str] = None,
+            host: Optional[str] = None,
             *,
             on_startup: Optional[Callable] = None,
             parameters: Optional[Tuple] = None,
@@ -68,16 +67,16 @@ class Bot(FastAPI):
     ) -> FastAPI:
         try:
             path = f"https://api.telegram.org/bot{self.token}"
-            json_params = {
-                "url": webhook_host,
+            requests.get(
+                f"{path}/setWebhook", 
+                json={
+                "url": host,
                 "max_connections": 100,
                 "drop_pending_updates": True,
                 "secret_token": self.signature,
-            }
-            requests.get(path + "/setWebhook", json=json_params)
+            })
             data = requests.get(path + "/getMe").json()
             self.user = User(**data["result"])
-            print(self.user.username)
             on_startup(*parameters, **kwargs)
         finally:
-            return app
+            return self
